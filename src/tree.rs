@@ -1,5 +1,7 @@
 
 use std::cmp::Ordering;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 use Tree::*;
 
@@ -98,19 +100,19 @@ where
                     let bf_r = node.right.balance();
                     let bf_l = node.left.balance();
 
-                    if bf == 2 {
-                        if bf_l == 1 {
+                    if bf >= 2 {
+                        if bf_l > 0 {
                             self.rotate_left_left();
                         } 
-                        else if bf_l == -1 {
+                        else if bf_l < 0 {
                             self.rotate_left_right();
                         }
                     }
-                    else if bf == -2 {
-                        if bf_r == -1 {
+                    else if bf <= -2 {
+                        if bf_r < 0 {
                             self.rotate_right_right();
                         } 
-                        else if bf_r == 1 {
+                        else if bf_r > 0 {
                             self.rotate_right_left();
                         }
                     }
@@ -157,19 +159,19 @@ where
                     let bf_r = node.right.balance();
                     let bf_l = node.left.balance();
                     
-                    if bf == 2 {
-                        if bf_l == 1 || bf_l == 0 {
+                    if bf >= 2 {
+                        if bf_l >= 0 {
                             self.rotate_left_left();
                         }
-                        else if bf_l == -1 {
+                        else if bf_l < 0 {
                             self.rotate_left_right();
                         }
                     }
-                    else if bf == -2 {
-                        if bf_r == -1 || bf_r == 0 {
+                    else if bf <= -2 {
+                        if bf_r <= 0 {
                             self.rotate_right_right();
                         }
-                        else if bf_r == 1 {
+                        else if bf_r > 0 {
                             self.rotate_right_left();
                         }
                     }
@@ -178,12 +180,27 @@ where
         }
         ret
     }
-    fn height(&self) -> isize 
+    pub fn find_nth(&self, index: usize) -> Option<(&K, &V)>
     {
-        match self {
-            Filled(node) => node.height(),
-            Empty => 0,
+        use Ordering::*;
+        let mut ret  = None;
+        let     node = &*self;
+        let     wt   = node.weight as usize;
+        let     wt_l = node.left.weight;
+
+        match index.cmp(&wt) {
+            Less => { 
+                ret = self.left.find_nth(index);
+            },
+            Greater => { 
+                ret = self.right.find_nth(index - wt);
+            },
+            Equal => {
+                let node = &*self; 
+                ret = Some((&node.key, &node.value));
+            },
         }
+        ret
     }
     fn take(&mut self) -> Tree<K, V>
     {
@@ -193,46 +210,18 @@ where
     {
         !self.is_empty()
     }
-    fn key(&self) -> &K
-    {
-        match self {
-            Filled(node) => &node.key,
-            Empty => panic!("Node is Empty."),
-        }
-    }
-    fn value(&self) -> &V
-    {
-        match self {
-            Filled(node) => &node.value,
-            Empty => panic!("Node is Empty."),
-        }
-    }
-    fn weight(&self) -> isize
-    {
-        match self {
-            Filled(node) => node.weight,
-            Empty => 0,
-        }
-    }
-    fn balance(&self) -> isize
-    {
-        match self {
-            Filled(node) => node.balance(),
-            Empty => 0,
-        }
-    }
     fn left(&self) -> &Tree<K, V>
     {
         match self {
             Filled(node) => &node.left,
-            Empty => &Empty,
+            Empty => panic!("Node is Empty."),
         }
     }
     fn right(&self) -> &Tree<K, V>
     {
         match self {
             Filled(node) => &node.right,
-            Empty => &Empty,
+            Empty => panic!("Node is Empty."),
         }
     }
     fn left_mut(&mut self) -> &mut Tree<K, V>
@@ -249,60 +238,46 @@ where
             _ => panic!("Node is Empty."),
         }
     }
-    fn node_mut(&mut self) -> &mut Node<K, V>
-    {
-        match self {
-            Filled(node) => node,
-            _ => panic!("Node is Empty."),
-        }
-    }
-    fn node(&self) -> &Node<K, V>
-    {
-        match self {
-            Filled(node) => node,
-            _ => panic!("Node is Empty."),
-        }
-    }
     fn rotate_left_left(&mut self)
     {
-        let mut p  = self.take();
-        let mut tp = p.left_mut().take();
-        *p.left_mut()   = tp.right_mut().take();
-        *tp.right_mut() = p;
-        *self = tp.take();
+        let mut n = self.take();
+        let mut t = n.left.take();
+        *n.left_mut()  = t.right.take();
+        *t.right_mut() = n;
+        *self = t.take();
         self.update_weights(2);
     }
     fn rotate_right_right(&mut self)
     {
-        let mut p  = self.take();
-        let mut tp = p.right_mut().take();
-        *p.right_mut() = tp.left_mut().take();
-        *tp.left_mut() = p;
-        *self = tp.take();
+        let mut n = self.take();
+        let mut t = n.right.take();
+        *n.right_mut() = t.left.take();
+        *t.left_mut()  = n;
+        *self = t.take();
         self.update_weights(2);
     }
     fn rotate_right_left(&mut self)
     {
-        let mut p   = self.take();
-        let mut tp2 = p.right_mut().left_mut().take();
-        let mut tp  = p.right_mut().take();
-        *p.right_mut()   = tp2.left_mut().take();
-        *tp.left_mut()   = tp2.right_mut().take();
-        *tp2.left_mut()  = p.take();
-        *tp2.right_mut() = tp.take();
-        *self = tp2.take();
+        let mut n  = self.take();
+        let mut t2 = n.right.left.take();
+        let mut t1 = n.right.take();
+        *n.right_mut()  = t2.left.take();
+        *t1.left_mut()  = t2.right.take();
+        *t2.left_mut()  = n.take();
+        *t2.right_mut() = t1.take();
+        *self = t2.take();
         self.update_weights(2);
     }
     fn rotate_left_right(&mut self)
     {
-        let mut p   = self.take();
-        let mut tp2 = p.left_mut().right_mut().take();
-        let mut tp  = p.left_mut().take();
-        *p.left_mut()    = tp2.right_mut().take();
-        *tp.right_mut()  = tp2.left_mut().take();
-        *tp2.right_mut() = p.take();
-        *tp2.left_mut()  = tp.take();
-        *self = tp2.take();
+        let mut n  = self.take();
+        let mut t2 = n.left.right.take();
+        let mut t1 = n.left.take();
+        *n.left_mut()   = t2.right.take();
+        *t1.right_mut() = t2.left.take();
+        *t2.right_mut() = n.take();
+        *t2.left_mut()  = t1.take();
+        *self = t2.take();
         self.update_weights(2);
     } 
     fn update_weights(&mut self, depth: isize) -> isize
@@ -316,31 +291,59 @@ where
             if self.right().is_filled() {
                 wt_r = self.right_mut().update_weights(depth - 1);
             }
-            self.node_mut().weight = 1 + wt_l + wt_r;
+            self.weight = 1 + wt_l + wt_r;
         }
-        self.node().weight
+        self.weight
     }
     fn predecessor(&self) -> (K, V)
     {
         let mut t = self;
-        while t.right().is_filled() {
+        while let Filled(_) = t.right() {
             t = t.right();
         }
-        (t.key().clone(), t.value().clone())
+        (t.key.clone(), t.value.clone())
     }
     fn successor(&self) -> (K, V)
     {
         let mut t = self;
-        while t.left().is_filled() {
+        while let Filled(_) = t.left() {
             t = t.left();
         }
-        (t.key().clone(), t.value().clone())
+        (t.key.clone(), t.value.clone())
     }
 }
 impl<K, V> Default for Tree<K, V>
 {
     fn default() -> Self { 
         Empty
+    }
+}
+
+impl<K, V> Deref for Tree<K, V>
+where
+    K: Clone + Ord,
+    V: Clone,
+{
+    type Target = Node<K, V>;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Filled(node) => node,
+            Empty => panic!("Attempt to dereference an Empty Tree."),
+        }
+    }
+}
+
+impl<K, V> DerefMut for Tree<K, V>
+where
+    K: Clone + Ord,
+    V: Clone,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Filled(node) => node,
+            Empty => panic!("Attempt to dereference an Empty Tree."),
+        }
     }
 }
 
@@ -352,10 +355,10 @@ mod tests {
         let mut tree = Tree::new();
         for ch in "qwertyuiopasdfghjklzxcvbnmklasjfal;jasjfsa;".chars() {
             tree.insert(ch, 5);
-        }
+        }/*
         for ch in "qwertyuiopafsa;".chars() {
             tree.remove(&ch);
-        }
+        }*/
         println!("{:#?}", tree);
     }
 }
