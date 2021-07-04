@@ -24,27 +24,9 @@ where
     {
         Node { key, value, weight: 1, left: Empty, right: Empty }
     }
-    fn height(&self) -> isize
-    {
-        // Adjust to get the ceiling.
-        Self::floor_log2(self.weight * 2 - 1)
-    }
     fn balance(&self) -> isize
     {
         self.left.height() - self.right.height()
-    }
-    fn floor_log2(mut n: isize) -> isize
-    {
-        if n != 0 {
-            let mut c = 0;
-            while n != 0 {
-                n >>= 1;
-                c  += 1;
-            }
-            c - 1
-        } else {
-            0
-        }
     }
 }
 
@@ -202,6 +184,33 @@ where
         }
         ret
     }
+    fn height(&self) -> isize
+    {
+        match self {
+            Filled(node) => Self::floor_log2(node.weight * 2 - 1),
+            Empty => 0,
+        }
+    }
+    fn floor_log2(mut n: isize) -> isize
+    {
+        if n != 0 {
+            let mut c = 0;
+            while n != 0 {
+                n >>= 1;
+                c  += 1;
+            }
+            c - 1
+        } else {
+            0
+        }
+    }
+    fn balance(&self) -> isize 
+    {
+        match self {
+            Filled(node) => node.left.height() - self.right.height(),
+            Empty => 0,
+        }
+    }
     fn take(&mut self) -> Tree<K, V>
     {
         std::mem::take(self)
@@ -210,50 +219,22 @@ where
     {
         !self.is_empty()
     }
-    fn left(&self) -> &Tree<K, V>
-    {
-        match self {
-            Filled(node) => &node.left,
-            Empty => panic!("Node is Empty."),
-        }
-    }
-    fn right(&self) -> &Tree<K, V>
-    {
-        match self {
-            Filled(node) => &node.right,
-            Empty => panic!("Node is Empty."),
-        }
-    }
-    fn left_mut(&mut self) -> &mut Tree<K, V>
-    {
-        match self {
-            Filled(node) => &mut node.left,
-            _ => panic!("Node is Empty."),
-        }
-    }
-    fn right_mut(&mut self) -> &mut Tree<K, V>
-    {
-        match self {
-            Filled(node) => &mut node.right,
-            _ => panic!("Node is Empty."),
-        }
-    }
     fn rotate_left_left(&mut self)
     {
         let mut n = self.take();
         let mut t = n.left.take();
-        *n.left_mut()  = t.right.take();
-        *t.right_mut() = n;
-        *self = t.take();
+        n.left    = t.right.take();
+        t.right   = n;
+        *self     = t.take();
         self.update_weights(2);
     }
     fn rotate_right_right(&mut self)
     {
         let mut n = self.take();
         let mut t = n.right.take();
-        *n.right_mut() = t.left.take();
-        *t.left_mut()  = n;
-        *self = t.take();
+        n.right   = t.left.take();
+        t.left    = n;
+        *self     = t.take();
         self.update_weights(2);
     }
     fn rotate_right_left(&mut self)
@@ -261,11 +242,11 @@ where
         let mut n  = self.take();
         let mut t2 = n.right.left.take();
         let mut t1 = n.right.take();
-        *n.right_mut()  = t2.left.take();
-        *t1.left_mut()  = t2.right.take();
-        *t2.left_mut()  = n.take();
-        *t2.right_mut() = t1.take();
-        *self = t2.take();
+        n.right    = t2.left.take();
+        t1.left    = t2.right.take();
+        t2.left    = n.take();
+        t2.right   = t1.take();
+        *self      = t2.take();
         self.update_weights(2);
     }
     fn rotate_left_right(&mut self)
@@ -273,11 +254,11 @@ where
         let mut n  = self.take();
         let mut t2 = n.left.right.take();
         let mut t1 = n.left.take();
-        *n.left_mut()   = t2.right.take();
-        *t1.right_mut() = t2.left.take();
-        *t2.right_mut() = n.take();
-        *t2.left_mut()  = t1.take();
-        *self = t2.take();
+        n.left     = t2.right.take();
+        t1.right   = t2.left.take();
+        t2.right   = n.take();
+        t2.left    = t1.take();
+        *self      = t2.take();
         self.update_weights(2);
     } 
     fn update_weights(&mut self, depth: isize) -> isize
@@ -285,11 +266,11 @@ where
         if depth >= 0 {
             let mut wt_l = 0;
             let mut wt_r = 0;
-            if self.left().is_filled() {
-                wt_l = self.left_mut().update_weights(depth - 1);
+            if self.left.is_filled() {
+                wt_l = self.left.update_weights(depth - 1);
             }
-            if self.right().is_filled() {
-                wt_r = self.right_mut().update_weights(depth - 1);
+            if self.right.is_filled() {
+                wt_r = self.right.update_weights(depth - 1);
             }
             self.weight = 1 + wt_l + wt_r;
         }
@@ -298,16 +279,16 @@ where
     fn predecessor(&self) -> (K, V)
     {
         let mut t = self;
-        while let Filled(_) = t.right() {
-            t = t.right();
+        while let Filled(_) = t.right {
+            t = &t.right;
         }
         (t.key.clone(), t.value.clone())
     }
     fn successor(&self) -> (K, V)
     {
         let mut t = self;
-        while let Filled(_) = t.left() {
-            t = t.left();
+        while let Filled(_) = t.left {
+            t = &t.left;
         }
         (t.key.clone(), t.value.clone())
     }
