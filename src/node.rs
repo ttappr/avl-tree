@@ -34,7 +34,8 @@ where
     }
     pub (crate) fn height(&self) -> isize
     {
-        Self::floor_log2(self.weight)
+        // Adjust to get the ceiling.
+        Self::floor_log2(self.weight * 2 - 1)
     }
     pub (crate) fn balance(&self) -> isize
     {
