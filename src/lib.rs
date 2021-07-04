@@ -1,11 +1,8 @@
 
-#![allow(unused_imports)]
+#![allow(dead_code, unused_imports)]
 
 mod tree;
 use crate::tree::*;
-
-mod node;
-use crate::node::*;
 
 #[cfg(test)]
 mod tests {
