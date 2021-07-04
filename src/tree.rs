@@ -225,7 +225,7 @@ where
         let mut t = n.left.take();
         n.left    = t.right.take();
         t.right   = n;
-        *self     = t.take();
+        *self     = t;
         self.update_weights(2);
     }
     fn rotate_right_right(&mut self)
@@ -234,7 +234,7 @@ where
         let mut t = n.right.take();
         n.right   = t.left.take();
         t.left    = n;
-        *self     = t.take();
+        *self     = t;
         self.update_weights(2);
     }
     fn rotate_right_left(&mut self)
@@ -244,9 +244,9 @@ where
         let mut t1 = n.right.take();
         n.right    = t2.left.take();
         t1.left    = t2.right.take();
-        t2.left    = n.take();
-        t2.right   = t1.take();
-        *self      = t2.take();
+        t2.left    = n;
+        t2.right   = t1;
+        *self      = t2;
         self.update_weights(2);
     }
     fn rotate_left_right(&mut self)
@@ -256,9 +256,9 @@ where
         let mut t1 = n.left.take();
         n.left     = t2.right.take();
         t1.right   = t2.left.take();
-        t2.right   = n.take();
-        t2.left    = t1.take();
-        *self      = t2.take();
+        t2.right   = n;
+        t2.left    = t1;
+        *self      = t2;
         self.update_weights(2);
     } 
     fn update_weights(&mut self, depth: isize) -> isize
