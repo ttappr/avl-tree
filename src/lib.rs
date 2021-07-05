@@ -31,7 +31,7 @@ pub struct Node<K, V>
 impl<K, V> Node<K, V>
 where
     K: Clone + Ord,
-    V: Clone + Default,
+    V: Clone,
 {
     /// Private constructor for `Node`. Takes a key and value.
     /// 
@@ -69,7 +69,7 @@ pub enum Tree<K, V>
 impl<K, V> Tree<K, V>
 where 
     K: Clone + Ord,
-    V: Clone + Default,
+    V: Clone,
 {
     /// Creates a new `Tree` populated with a `Node` holding the given key and
     /// value.
@@ -142,39 +142,6 @@ where
             }
         }
         ret
-    }
-
-    /// Retrieves a mutable reference to the value associated with the key; or
-    /// if it doesn't exist, a new entry is created in the tree and a mutable
-    /// reference is returned for its value. The value will be set to the 
-    /// default of the type used for values.
-    /// 
-    pub fn get_or_insert(&mut self, key: &K) -> &mut V
-    {
-        use Ordering::*;
-        match key.cmp(&self.key) {
-            Less => {
-                if self.left.is_filled() {
-                    self.left.get_or_insert(key)
-                } else {
-                    self.weight += 1;
-                    self.insert(key.clone(), V::default());
-                    self.get_mut(key).unwrap()
-                }
-            },
-            Greater => {
-                if self.right.is_filled() {
-                    self.right.get_or_insert(key)
-                } else {
-                    self.weight += 1;
-                    self.insert(key.clone(), V::default());
-                    self.get_mut(key).unwrap()
-                }
-            },
-            Equal => {
-                &mut self.value
-            }
-        }
     }
 
     /// Inserts the given key and value into the binary tree. If the key was
@@ -520,7 +487,7 @@ where
 impl<K, V> DerefMut for Tree<K, V>
 where
     K: Clone + Ord,
-    V: Clone + Default,
+    V: Clone,
 {
     /// Complements the implementation of `Deref` by giving access to mutable
     /// `Node` fields with minimal syntax.
@@ -536,10 +503,13 @@ where
 impl<K, V> Index<&K> for Tree<K, V>
 where
     K: Clone + Ord,
-    V: Clone + Default,
+    V: Clone,
 {
     type Output = V;
 
+    /// Gives the tree the square bracket indexing feature. The tree keys are
+    /// used to index their related values.
+    ///
     fn index(&self, key: &K) -> &Self::Output
     {
         match self.get(key) {
@@ -552,16 +522,16 @@ where
 impl<K, V> IndexMut<&K> for Tree<K, V>
 where
     K: Clone + Ord,
-    V: Clone + Default,
+    V: Clone,
 {
-    /// This invokes `.get_or_insert()` currently to either get the current
-    /// mutable value of the key, or create a new value set to default.
+    /// Gives the tree the indexing feature so it behaves like a dictionary
+    /// which supports square bracket indexing.
     /// 
     fn index_mut(&mut self, key: &K) -> &mut Self::Output
     {
-        match self.get_or_insert(key) {
+        match self.get_mut(key) {
             Some(v) => v,
-            None => panic!("This should not fail."),
+            None => panic!("Key is not in the tree."),
         }
     }
 }
