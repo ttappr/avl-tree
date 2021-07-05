@@ -5,6 +5,9 @@ use std::ops::DerefMut;
 
 use Tree::*;
 
+/// Represents a node in the binary tree, that holds a key and value and 
+/// slots for the right and left sub-trees.
+/// 
 #[derive(Debug)]
 pub struct Node<K, V>
 {
@@ -20,16 +23,33 @@ where
     K: Clone + Ord,
     V: Clone,
 {
+    /// Private constructor for `Node`. Takes a key and value.
+    /// 
     fn new(key: K, value: V) -> Self
     {
         Node { key, value, weight: 1, left: Empty, right: Empty }
     }
+
+    /// Returns a value indicating the difference in height between its left
+    /// and right sub-trees (`left.height() - right.height()`).
+    /// 
     fn balance(&self) -> isize
     {
         self.left.height() - self.right.height()
     }
 }
 
+/// Represents the whole AVL binary tree externally. Internally, it's also the
+/// the implementation for the sub-trees that fill each node's right and left
+/// slot. It also implements `Deref` and `DerefMut` to render a reference to the
+/// `Node` it holds in it's `Filled` variant. A `Tree` is either occupied by
+/// a `Node` as indicated by the `Filled` variant, or it's `Empty`.
+/// 
+/// # Variants
+/// 
+/// * `Empty`   - Doesn't hold a node.
+/// * `Filled`  - Holds a `Node`, which in turn may hold other `Tree`s.
+/// 
 #[derive(Debug)]
 pub enum Tree<K, V> 
 {
@@ -41,18 +61,32 @@ where
     K: Clone + Ord,
     V: Clone,
 {
+    /// Creates a new `Tree` populated with a `Node` holding the given key and
+    /// value.
+    /// 
     pub fn new_with_insert(key: K, value: V) -> Self
     {
         Filled(Box::new(Node::new(key, value)))
     }
+
+    /// Creates a new empty `Tree` - the `Tree::Empty` variant.
+    /// 
     pub fn new() -> Self
     {
         Empty
     }
+
+    /// Indicates whether the `Tree` is populated or entirely empty.
+    /// 
     pub fn is_empty(&self) -> bool 
     {
         matches!(self, Empty)
     }
+
+    /// Inserts the given key and value into the binary tree. If the key was
+    /// already present, then `Some(V)` is returned holding the former value
+    /// of the key. If the key wasn't already present, `None` is returned.
+    /// 
     pub fn insert(&mut self, key: K, value: V) -> Option<V>
     {
         use Ordering::*;
@@ -103,6 +137,11 @@ where
         }
         ret
     }
+
+    /// Removes the provided key from the binary tree. If the key was present
+    /// in the tree, `Some(V)` is returned holding the former value; otherwise,
+    /// `None` is returned.
+    /// 
     pub fn remove(&mut self, key: &K) -> Option<V>
     {
         let mut ret = None;
@@ -162,7 +201,12 @@ where
         }
         ret
     }
-    
+
+    /// Returns the value in the tree at the ordinal position given by `index`.
+    /// If the index was within range of the items in the tree, the `index`-th
+    /// item is returned as `Some((&K, &V))` holding both the key and the value.
+    /// If `index` was out of range, `None` is returned.
+    /// 
     pub fn find_nth(&self, index: usize) -> Option<(&K, &V)>
     {
         self.find_nth_internal(index as isize)
@@ -178,7 +222,7 @@ where
         if idx_adj == 0 {
             ret = Some((&self.key, &self.value))
         }
-        else if idx_adj > 0  && self.right.is_filled() {
+        else if idx_adj > 0 && self.right.is_filled() {
             ret = self.right.find_nth_internal(idx_adj - 1);
         }
         else if self.left.is_filled() {
@@ -186,6 +230,10 @@ where
         }
         ret
     }
+
+    /// Returns the height of the tree, which is the log2 ceiling of the number
+    /// of nodes and sub-nodes in the current `Tree`.
+    /// 
     fn height(&self) -> isize
     {
         match self {
@@ -193,6 +241,9 @@ where
             Empty => 0,
         }
     }
+
+    /// A simple, but quick, calculation for `floor(log2(n))`.
+    /// 
     fn floor_log2(mut n: isize) -> isize
     {
         if n != 0 {
@@ -206,6 +257,12 @@ where
             0
         }
     }
+
+    /// Returns a value indicating whether the tree is balanced or not, with
+    /// negative values indicating the tree is heavy on the right, and
+    /// positive values indicating the tree is heavy on the left. The value 0
+    /// indicates a perfectly balanced tree/sub-tree.
+    /// 
     fn balance(&self) -> isize 
     {
         match self {
@@ -213,14 +270,29 @@ where
             Empty => 0,
         }
     }
+
+    /// Moves the tree from it's former location, replacing it with `Empty` and
+    /// returns the moved value to the caller giving it ownership.
+    /// 
     fn take(&mut self) -> Tree<K, V>
     {
         std::mem::take(self)
     }
+
+    /// Indicates whether a `Tree` has nodes (`true`), or is `Empty` (`false`). 
+    /// 
     fn is_filled(&self) -> bool
     {
         !self.is_empty()
     }
+
+    /// Performs a left-left rotation on the current `Tree`. These methods are
+    /// used to keep the tree in balance, so both left and right sub-trees 
+    /// grow or shrink at nearly the same rate. The name of the method can
+    /// be read as, "a left rotation is performed on the left branch." The
+    /// node within the current tree will be updated to hold the former left
+    /// node.
+    /// 
     fn rotate_left_left(&mut self)
     {
         let mut n = self.take();
@@ -230,6 +302,10 @@ where
         *self     = t;
         self.update_weights(2);
     }
+
+    /// Performs a right-right rotation on the current `Tree`. The `Tree`'s
+    /// node will be updated to hold the former right node.
+    /// 
     fn rotate_right_right(&mut self)
     {
         let mut n = self.take();
@@ -239,6 +315,9 @@ where
         *self     = t;
         self.update_weights(2);
     }
+
+    /// Performs a right-left rotation on the current `Tree`.
+    /// 
     fn rotate_right_left(&mut self)
     {
         let mut n  = self.take();
@@ -251,6 +330,9 @@ where
         *self      = t2;
         self.update_weights(2);
     }
+
+    /// Performs a left-right rotation on the current `Tree`.
+    /// 
     fn rotate_left_right(&mut self)
     {
         let mut n  = self.take();
@@ -263,6 +345,11 @@ where
         *self      = t2;
         self.update_weights(2);
     } 
+
+    /// Updates the weights of a sub-tree by descending `depth` levels in the
+    /// tree to find valid values, which are then used to update the nodes
+    /// in the higher ranks. This is invoked after rotations.
+    /// 
     fn update_weights(&mut self, depth: isize) -> isize
     {
         if depth >= 0 {
@@ -278,6 +365,10 @@ where
         }
         self.weight
     }
+
+    /// Returns the key and value of the rightmost node in the current `Tree`.
+    /// This is invoked as part of the `.remove()` method.
+    /// 
     fn predecessor(&self) -> (K, V)
     {
         let mut t = self;
@@ -286,6 +377,10 @@ where
         }
         (t.key.clone(), t.value.clone())
     }
+
+    /// Returns the key and value of the leftmost node in the current `Tree`.
+    /// Invoked by `.remove()`.
+    /// 
     fn successor(&self) -> (K, V)
     {
         let mut t = self;
@@ -295,8 +390,12 @@ where
         (t.key.clone(), t.value.clone())
     }
 }
+
 impl<K, V> Default for Tree<K, V>
 {
+    /// Implements the default value for `Tree`. This is needed as part of the
+    /// `.take()` feature.
+    /// 
     fn default() -> Self { 
         Empty
     }
@@ -309,6 +408,9 @@ where
 {
     type Target = Node<K, V>;
 
+    /// Implements `Deref` for the `Tree`. This makes the fields of the `Node`
+    /// contained in the `Filled` variant accessible with minimal syntax.
+    /// 
     fn deref(&self) -> &Self::Target {
         match self {
             Filled(node) => node,
@@ -322,6 +424,9 @@ where
     K: Clone + Ord,
     V: Clone,
 {
+    /// Complements the implementation of `Deref` by giving access to mutable
+    /// `Node` fields with minimal syntax.
+    /// 
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
             Filled(node) => node,
