@@ -302,7 +302,7 @@ where
     fn height(&self) -> isize
     {
         match self {
-            Filled(node) => Self::floor_log2(node.weight * 2 - 1),
+            Filled(node) => Self::floor_log2(node.weight),
             Empty => 0,
         }
     }
@@ -342,7 +342,9 @@ where
     /// The Rust version on HackerRank is old and won't support the 
     /// implementation below. To get avl-tree working on that site, this 
     /// following implementation has to be used instead:
-    /// ```
+    ///
+    /// ```ignore
+    ///
     /// fn take(&mut self) -> Tree<K, V>
     /// {
     ///    let t = self.clone();
@@ -558,6 +560,6 @@ mod tests {
         for ch in "qwertyuiopasdfghjklzxcvbnmklasjfal;jasjfsa;".chars() {
             tree.insert(ch, 5);
         }
-        println!("{:#?}", tree.find_nth(15));
+        println!("{:#?}", tree);
     }
 }
