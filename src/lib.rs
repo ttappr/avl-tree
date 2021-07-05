@@ -100,20 +100,22 @@ where
     {
         use Ordering::*;
         let mut ret = None;
-        match key.cmp(&self.key) {
-            Less => {
-                if self.left.is_filled() {
-                    ret = self.left.get(key);
-                }
-            },
-            Greater => {
-                if self.right.is_filled() {
-                    ret = self.right.get(key);
-                }
-            },
-            Equal => {
-                ret = Some(&self.value)
-            },
+        if self.is_filled() {
+            match key.cmp(&self.key) {
+                Less => {
+                    if self.left.is_filled() {
+                        ret = self.left.get(key);
+                    }
+                },
+                Greater => {
+                    if self.right.is_filled() {
+                        ret = self.right.get(key);
+                    }
+                },
+                Equal => {
+                    ret = Some(&self.value)
+                },
+            }
         }
         ret
     }
@@ -126,19 +128,21 @@ where
     {
         use Ordering::*;
         let mut ret = None;
-        match key.cmp(&self.key) {
-            Less => {
-                if self.left.is_filled() {
-                    ret = self.left.get_mut(key);
+        if self.is_filled() {
+            match key.cmp(&self.key) {
+                Less => {
+                    if self.left.is_filled() {
+                        ret = self.left.get_mut(key);
+                    }
+                },
+                Greater => {
+                    if self.right.is_filled() {
+                        ret = self.right.get_mut(key);
+                    }
+                },
+                Equal => {
+                    ret = Some(&mut self.value);
                 }
-            },
-            Greater => {
-                if self.right.is_filled() {
-                    ret = self.right.get_mut(key);
-                }
-            },
-            Equal => {
-                ret = Some(&mut self.value);
             }
         }
         ret
@@ -263,10 +267,11 @@ where
         ret
     }
 
-    /// Returns the value in the tree at the ordinal 0-based position given by 
-    /// `index`. If the index was within range of the items in the tree, the 
-    /// `index`-th item is returned as `Some((&K, &V))` holding both the key and
-    /// the value. If `index` was out of range, `None` is returned.
+    /// Returns the key and value in the tree at the ordinal 0-based position 
+    /// given by `index`. If the index was within range of the items in the 
+    /// tree, the `index`-th item is returned as `Some((&K, &V))` holding both 
+    /// the key and the value. If `index` was out of range, `None` is returned.
+    /// This operation has `O(log n)` time-complexity.
     /// 
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
     {
@@ -280,18 +285,20 @@ where
     fn get_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
         let mut ret  = None;
-        let     wt_l = if self.left.is_filled() 
-                            { self.left.weight } 
-                       else { 0                };
-        let idx_adj = index - wt_l;
-        if idx_adj == 0 {
-            ret = Some((&self.key, &self.value))
-        }
-        else if idx_adj > 0 && self.right.is_filled() {
-            ret = self.right.get_nth_internal(idx_adj - 1);
-        }
-        else if self.left.is_filled() {
-            ret = self.left.get_nth_internal(index);
+        if self.is_filled() {
+            let     wt_l = if self.left.is_filled() 
+                                { self.left.weight } 
+                        else { 0                };
+            let idx_adj = index - wt_l;
+            if idx_adj == 0 {
+                ret = Some((&self.key, &self.value))
+            }
+            else if idx_adj > 0 && self.right.is_filled() {
+                ret = self.right.get_nth_internal(idx_adj - 1);
+            }
+            else if self.left.is_filled() {
+                ret = self.left.get_nth_internal(index);
+            }
         }
         ret
     }
@@ -344,6 +351,9 @@ where
     /// following implementation has to be used instead:
     ///
     /// ```ignore
+    /// // Only use this if you have to. It will recursively clone every subtree
+    /// // in `right` and `left`. The uncommented version below is preferred
+    /// // because it can move the node and its `Box` without cloning.
     ///
     /// fn take(&mut self) -> Tree<K, V>
     /// {
@@ -561,5 +571,18 @@ mod tests {
             tree.insert(ch, 5);
         }
         println!("{:#?}", tree);
+    }
+    
+    #[test]
+    fn update_or_insert_and_update() {
+        let mut tree = Tree::new();
+        //tree.insert('a', 7);
+        match tree.get_mut(&'b') {
+            Some(value) => *value = 7,
+            None => {
+                tree.insert('b', 7);
+                *tree.get_mut(&'b').unwrap() = 8;
+            }
+        }
     }
 }
