@@ -41,7 +41,7 @@ where
     K: Clone + Ord,
     V: Clone,
 {
-    pub fn new_and_insert(key: K, value: V) -> Self
+    pub fn new_with_insert(key: K, value: V) -> Self
     {
         Filled(Box::new(Node::new(key, value)))
     }
@@ -59,7 +59,7 @@ where
         let mut ret = None;
         match self {
             Empty => {
-                *self = Tree::new_and_insert(key, value);
+                *self = Tree::new_with_insert(key, value);
             },
             Filled(node) => {
                 match key.cmp(&node.key) {
@@ -162,25 +162,21 @@ where
         }
         ret
     }
-    pub fn find_nth(&self, index: usize) -> Option<(&K, &V)>
+    pub fn find_nth(&self, index: isize) -> Option<(&K, &V)>
     {
-        use Ordering::*;
         let mut ret  = None;
-        let     node = &*self;
-        let     wt   = node.weight as usize;
-        let     wt_l = node.left.weight;
-
-        match index.cmp(&wt) {
-            Less => { 
-                ret = self.left.find_nth(index);
-            },
-            Greater => { 
-                ret = self.right.find_nth(index - wt);
-            },
-            Equal => {
-                let node = &*self; 
-                ret = Some((&node.key, &node.value));
-            },
+        let     wt_l = if self.left.is_filled() 
+                            { self.left.weight } 
+                       else { 0                };
+        let idx_adj = index - wt_l;
+        if idx_adj == 0 {
+            ret = Some((&self.key, &self.value))
+        }
+        else if idx_adj > 0  && self.right.is_filled() {
+            ret = self.right.find_nth(idx_adj - 1);
+        }
+        else if self.left.is_filled() {
+            ret = self.left.find_nth(index);
         }
         ret
     }
@@ -336,10 +332,7 @@ mod tests {
         let mut tree = Tree::new();
         for ch in "qwertyuiopasdfghjklzxcvbnmklasjfal;jasjfsa;".chars() {
             tree.insert(ch, 5);
-        }/*
-        for ch in "qwertyuiopafsa;".chars() {
-            tree.remove(&ch);
-        }*/
-        println!("{:#?}", tree);
+        }
+        println!("{:#?}", tree.find_nth(15));
     }
 }
