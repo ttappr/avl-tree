@@ -1,11 +1,17 @@
 
-//! An AVL Tree implementation in Rust.
+//! An AVL Tree implementation in Rust that provides a dictionary-like 
+//! interface. Keys are used as the data for comparison when inserting into the
+//! tree. The keys can be associated with values, which can be retrieved using
+//! the keys with `O(log n)` time-complexity. Insertions, deletions, lookups,
+//! etc. are all `O(log n)` operations.
 //! 
 
 
 use std::cmp::Ordering;
 use std::ops::Deref;
 use std::ops::DerefMut;
+use std::ops::Index;
+use std::ops::IndexMut;
 
 use Tree::*;
 
@@ -25,7 +31,7 @@ pub struct Node<K, V>
 impl<K, V> Node<K, V>
 where
     K: Clone + Ord,
-    V: Clone,
+    V: Clone + Default,
 {
     /// Private constructor for `Node`. Takes a key and value.
     /// 
@@ -63,7 +69,7 @@ pub enum Tree<K, V>
 impl<K, V> Tree<K, V>
 where 
     K: Clone + Ord,
-    V: Clone,
+    V: Clone + Default,
 {
     /// Creates a new `Tree` populated with a `Node` holding the given key and
     /// value.
@@ -85,6 +91,90 @@ where
     pub fn is_empty(&self) -> bool 
     {
         matches!(self, Empty)
+    }
+
+    /// Retrieves the value associated with the given key. If the key exists in
+    /// the tree, `Some(&V)` is returned; `None` otherwise.
+    /// 
+    pub fn get(&self, key: &K) -> Option<&V>
+    {
+        use Ordering::*;
+        let mut ret = None;
+        match key.cmp(&self.key) {
+            Less => {
+                if self.left.is_filled() {
+                    ret = self.left.get(key);
+                }
+            },
+            Greater => {
+                if self.right.is_filled() {
+                    ret = self.right.get(key);
+                }
+            },
+            Equal => {
+                ret = Some(&self.value)
+            },
+        }
+        ret
+    }
+
+    /// Returns a mutable reference to the value associated with the given key.
+    /// If a value exists at `key`, then `Some(&mut V)` is returned; `None`
+    /// otherwise.
+    /// 
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V>
+    {
+        use Ordering::*;
+        let mut ret = None;
+        match key.cmp(&self.key) {
+            Less => {
+                if self.left.is_filled() {
+                    ret = self.left.get_mut(key);
+                }
+            },
+            Greater => {
+                if self.right.is_filled() {
+                    ret = self.right.get_mut(key);
+                }
+            },
+            Equal => {
+                ret = Some(&mut self.value);
+            }
+        }
+        ret
+    }
+
+    /// Retrieves a mutable reference to the value associated with the key; or
+    /// if it doesn't exist, a new entry is created in the tree and a mutable
+    /// reference is returned for its value. The value will be set to the 
+    /// default of the type used for values.
+    /// 
+    pub fn get_or_insert(&mut self, key: &K) -> &mut V
+    {
+        use Ordering::*;
+        match key.cmp(&self.key) {
+            Less => {
+                if self.left.is_filled() {
+                    self.left.get_or_insert(key)
+                } else {
+                    self.weight += 1;
+                    self.insert(key.clone(), V::default());
+                    self.get_mut(key).unwrap()
+                }
+            },
+            Greater => {
+                if self.right.is_filled() {
+                    self.right.get_or_insert(key)
+                } else {
+                    self.weight += 1;
+                    self.insert(key.clone(), V::default());
+                    self.get_mut(key).unwrap()
+                }
+            },
+            Equal => {
+                &mut self.value
+            }
+        }
     }
 
     /// Inserts the given key and value into the binary tree. If the key was
@@ -206,16 +296,20 @@ where
         ret
     }
 
-    /// Returns the value in the tree at the ordinal position given by `index`.
-    /// If the index was within range of the items in the tree, the `index`-th
-    /// item is returned as `Some((&K, &V))` holding both the key and the value.
-    /// If `index` was out of range, `None` is returned.
+    /// Returns the value in the tree at the ordinal 0-based position given by 
+    /// `index`. If the index was within range of the items in the tree, the 
+    /// `index`-th item is returned as `Some((&K, &V))` holding both the key and
+    /// the value. If `index` was out of range, `None` is returned.
     /// 
     pub fn find_nth(&self, index: usize) -> Option<(&K, &V)>
     {
         self.find_nth_internal(index as isize)
     }
 
+    /// Internal implementation for `.find_nth()`. The public facing version
+    /// prohibits passing negative values as indices, while the internal version
+    /// needs flexibility to avoid unsigned overflows.
+    /// 
     fn find_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
         let mut ret  = None;
@@ -426,7 +520,7 @@ where
 impl<K, V> DerefMut for Tree<K, V>
 where
     K: Clone + Ord,
-    V: Clone,
+    V: Clone + Default,
 {
     /// Complements the implementation of `Deref` by giving access to mutable
     /// `Node` fields with minimal syntax.
@@ -435,6 +529,39 @@ where
         match self {
             Filled(node) => node,
             Empty => panic!("Attempt to dereference an Empty Tree."),
+        }
+    }
+}
+
+impl<K, V> Index<&K> for Tree<K, V>
+where
+    K: Clone + Ord,
+    V: Clone + Default,
+{
+    type Output = V;
+
+    fn index(&self, key: &K) -> &Self::Output
+    {
+        match self.get(key) {
+            Some(v) => v,
+            None => panic!("Attempt to read non-existent key."),
+        }
+    }
+}
+
+impl<K, V> IndexMut<&K> for Tree<K, V>
+where
+    K: Clone + Ord,
+    V: Clone + Default,
+{
+    /// This invokes `.get_or_insert()` currently to either get the current
+    /// mutable value of the key, or create a new value set to default.
+    /// 
+    fn index_mut(&mut self, key: &K) -> &mut Self::Output
+    {
+        match self.get_or_insert(key) {
+            Some(v) => v,
+            None => panic!("This should not fail."),
         }
     }
 }
