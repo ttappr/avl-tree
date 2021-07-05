@@ -270,14 +270,14 @@ where
     /// 
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
     {
-        self.find_nth_internal(index as isize)
+        self.get_nth_internal(index as isize)
     }
 
     /// Internal implementation for `.find_nth()`. The public facing version
     /// prohibits passing negative values as indices, while the internal version
     /// needs flexibility to avoid unsigned overflows.
     /// 
-    fn find_nth_internal(&self, index: isize) -> Option<(&K, &V)>
+    fn get_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
         let mut ret  = None;
         let     wt_l = if self.left.is_filled() 
@@ -288,10 +288,10 @@ where
             ret = Some((&self.key, &self.value))
         }
         else if idx_adj > 0 && self.right.is_filled() {
-            ret = self.right.find_nth_internal(idx_adj - 1);
+            ret = self.right.get_nth_internal(idx_adj - 1);
         }
         else if self.left.is_filled() {
-            ret = self.left.find_nth_internal(index);
+            ret = self.left.get_nth_internal(index);
         }
         ret
     }
