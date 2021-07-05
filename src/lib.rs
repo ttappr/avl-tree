@@ -143,7 +143,7 @@ where
         }
         ret
     }
-
+    
     /// Inserts the given key and value into the binary tree. If the key was
     /// already present, then `Some(V)` is returned holding the former value
     /// of the key. If the key wasn't already present, `None` is returned.
@@ -268,7 +268,7 @@ where
     /// `index`-th item is returned as `Some((&K, &V))` holding both the key and
     /// the value. If `index` was out of range, `None` is returned.
     /// 
-    pub fn find_nth(&self, index: usize) -> Option<(&K, &V)>
+    pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
     {
         self.find_nth_internal(index as isize)
     }
@@ -331,13 +331,25 @@ where
     fn balance(&self) -> isize 
     {
         match self {
-            Filled(node) => node.left.height() - self.right.height(),
+            Filled(node) => node.left.height() - node.right.height(),
             Empty => 0,
         }
     }
 
     /// Moves the tree from it's former location, replacing it with `Empty` and
     /// returns the moved value to the caller giving it ownership.
+    ///
+    /// The Rust version on HackerRank is old and won't support the 
+    /// implementation below. To get avl-tree working on that site, this 
+    /// following implementation has to be used instead:
+    /// ```
+    /// fn take(&mut self) -> Tree<K, V>
+    /// {
+    ///    let t = self.clone();
+    ///    *self = Empty;
+    ///    t
+    /// }
+    /// ```
     /// 
     fn take(&mut self) -> Tree<K, V>
     {
