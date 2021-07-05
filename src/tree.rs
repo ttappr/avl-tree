@@ -162,7 +162,13 @@ where
         }
         ret
     }
-    pub fn find_nth(&self, index: isize) -> Option<(&K, &V)>
+    
+    pub fn find_nth(&self, index: usize) -> Option<(&K, &V)>
+    {
+        self.find_nth_internal(index as isize)
+    }
+
+    fn find_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
         let mut ret  = None;
         let     wt_l = if self.left.is_filled() 
@@ -173,10 +179,10 @@ where
             ret = Some((&self.key, &self.value))
         }
         else if idx_adj > 0  && self.right.is_filled() {
-            ret = self.right.find_nth(idx_adj - 1);
+            ret = self.right.find_nth_internal(idx_adj - 1);
         }
         else if self.left.is_filled() {
-            ret = self.left.find_nth(index);
+            ret = self.left.find_nth_internal(index);
         }
         ret
     }
