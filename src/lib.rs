@@ -1,4 +1,8 @@
 
+//! An AVL Tree implementation in Rust.
+//! 
+
+
 use std::cmp::Ordering;
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -437,7 +441,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::tree::*;
+    use crate::*;
+
     #[test]
     fn it_works() {
         let mut tree = Tree::new();
