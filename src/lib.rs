@@ -257,9 +257,8 @@ where
     fn get_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
         let mut ret  = None;
-        let     wt_l = if self.left.is_filled() 
-                            { self.left.weight } 
-                    else { 0                };
+        let     wt_l = match &self.left { Filled(node) => node.weight, 
+                                          Empty        => 0            };
         let idx_adj = index - wt_l;
         if idx_adj == 0 {
             ret = Some((&self.key, &self.value))
