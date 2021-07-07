@@ -94,58 +94,27 @@ where
     }
 
     /// Retrieves the value associated with the given key. If the key exists in
-    /// the tree, `Some(&V)` is returned; `None` otherwise.
+    /// the tree, `Some(&V)` is returned; `None` otherwise. If invoked on an
+    /// empty tree, returns `None`.
     /// 
     pub fn get(&self, key: &K) -> Option<&V>
     {
-        use Ordering::*;
-        let mut ret = None;
-        if self.is_filled() {
-            match key.cmp(&self.key) {
-                Less => {
-                    if self.left.is_filled() {
-                        ret = self.left.get(key);
-                    }
-                },
-                Greater => {
-                    if self.right.is_filled() {
-                        ret = self.right.get(key);
-                    }
-                },
-                Equal => {
-                    ret = Some(&self.value)
-                },
-            }
+        match self {
+            Filled(_) => self.get_internal(key),
+            _ => None,
         }
-        ret
     }
 
     /// Returns a mutable reference to the value associated with the given key.
     /// If a value exists at `key`, then `Some(&mut V)` is returned; `None`
-    /// otherwise.
+    /// otherwise. If invoked on an empty tree, returns `None`.
     /// 
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V>
     {
-        use Ordering::*;
-        let mut ret = None;
-        if self.is_filled() {
-            match key.cmp(&self.key) {
-                Less => {
-                    if self.left.is_filled() {
-                        ret = self.left.get_mut(key);
-                    }
-                },
-                Greater => {
-                    if self.right.is_filled() {
-                        ret = self.right.get_mut(key);
-                    }
-                },
-                Equal => {
-                    ret = Some(&mut self.value);
-                }
-            }
+        match self {
+            Filled(_) => self.get_mut_internal(key),
+            _ => None,
         }
-        ret
     }
     
     /// Inserts the given key and value into the binary tree. If the key was
@@ -275,7 +244,11 @@ where
     /// 
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
     {
-        self.get_nth_internal(index as isize)
+        if self.is_filled() {
+            self.get_nth_internal(index as isize)
+        } else {
+            None
+        }
     }
 
     /// Internal implementation for `.find_nth()`. The public facing version
@@ -285,26 +258,75 @@ where
     fn get_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
         let mut ret  = None;
-        if self.is_filled() {
-            let     wt_l = if self.left.is_filled() 
-                                { self.left.weight } 
-                        else { 0                };
-            let idx_adj = index - wt_l;
-            if idx_adj == 0 {
-                ret = Some((&self.key, &self.value))
-            }
-            else if idx_adj > 0 && self.right.is_filled() {
-                ret = self.right.get_nth_internal(idx_adj - 1);
-            }
-            else if self.left.is_filled() {
-                ret = self.left.get_nth_internal(index);
+        let     wt_l = if self.left.is_filled() 
+                            { self.left.weight } 
+                    else { 0                };
+        let idx_adj = index - wt_l;
+        if idx_adj == 0 {
+            ret = Some((&self.key, &self.value))
+        }
+        else if idx_adj > 0 && self.right.is_filled() {
+            ret = self.right.get_nth_internal(idx_adj - 1);
+        }
+        else if self.left.is_filled() {
+            ret = self.left.get_nth_internal(index);
+        }
+        ret
+    }
+
+    /// Internal implementation for `.get()`. Returns the value corresponding
+    /// to the given key. Doesn't check whether tree is empty.
+    ///
+    fn get_internal(&self, key: &K) -> Option<&V>
+    {
+        use Ordering::*;
+        let mut ret = None;
+        match key.cmp(&self.key) {
+            Less => {
+                if self.left.is_filled() {
+                    ret = self.left.get_internal(key);
+                }
+            },
+            Greater => {
+                if self.right.is_filled() {
+                    ret = self.right.get_internal(key);
+                }
+            },
+            Equal => {
+                ret = Some(&self.value)
+            },
+        }
+        ret
+    }
+
+    /// Internal implementation for `.get_mut()`. Returns a mutable reference
+    /// to the corresponding value of the key. Doesn't check whether tree is
+    /// empty or not before executing search.
+    ///
+    fn get_mut_internal(&mut self, key: &K) -> Option<&mut V>
+    {
+        use Ordering::*;
+        let mut ret = None;
+        match key.cmp(&self.key) {
+            Less => {
+                if self.left.is_filled() {
+                    ret = self.left.get_mut_internal(key);
+                }
+            },
+            Greater => {
+                if self.right.is_filled() {
+                    ret = self.right.get_mut_internal(key);
+                }
+            },
+            Equal => {
+                ret = Some(&mut self.value);
             }
         }
         ret
     }
 
-    /// Returns the height of the tree, which is the log2 ceiling of the number
-    /// of nodes and sub-nodes in the current `Tree`.
+    /// Returns the height of the tree, which is the log2 of the number of nodes
+    /// and sub-nodes in the current `Tree`.
     /// 
     fn height(&self) -> isize
     {
@@ -372,7 +394,7 @@ where
     /// 
     fn is_filled(&self) -> bool
     {
-        !self.is_empty()
+        matches!(self, Filled(_))
     }
 
     /// Performs a left-left rotation on the current `Tree`. These methods are
@@ -576,12 +598,11 @@ mod tests {
     #[test]
     fn update_or_insert_and_update() {
         let mut tree = Tree::new();
-        //tree.insert('a', 7);
+
         match tree.get_mut(&'b') {
-            Some(value) => *value = 7,
+            Some(value) => *value += 7,
             None => {
                 tree.insert('b', 7);
-                *tree.get_mut(&'b').unwrap() = 8;
             }
         }
     }
