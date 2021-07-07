@@ -244,10 +244,9 @@ where
     /// 
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
     {
-        if self.is_filled() {
-            self.get_nth_internal(index as isize)
-        } else {
-            None
+        match self {
+            Filled(_) => self.get_nth_internal(index as isize),
+            _ => None,
         }
     }
 
