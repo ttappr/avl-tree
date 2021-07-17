@@ -73,6 +73,12 @@ where
 {
     /// Creates a new `Tree` populated with a `Node` holding the given key and
     /// value.
+    /// ```
+    /// use avl_tree::*;
+    ///
+    /// let tree = Tree::new_with_insert('a', 1);
+    /// assert_eq!(tree[&'a'], 1);
+    /// ```
     /// 
     pub fn new_with_insert(key: K, value: V) -> Self
     {
@@ -80,13 +86,22 @@ where
     }
 
     /// Creates a new empty `Tree` - the `Tree::Empty` variant.
-    /// 
+    /// ```
+    /// use avl_tree::*;
+    /// assert_eq!(Tree::<String, ()>::new().is_empty(), true);
+    /// ```
+    ///
     pub fn new() -> Self
     {
         Empty
     }
 
     /// Indicates whether the `Tree` is populated or entirely empty.
+    /// ```
+    /// use avl_tree::*;
+    /// let tree = Tree::new_with_insert("hello", "world");
+    /// assert_eq!(tree.is_empty(), false);
+    /// ```
     /// 
     pub fn is_empty(&self) -> bool 
     {
@@ -96,6 +111,14 @@ where
     /// Retrieves the value associated with the given key. If the key exists in
     /// the tree, `Some(&V)` is returned; `None` otherwise. If invoked on an
     /// empty tree, returns `None`.
+    /// ```
+    /// use avl_tree::*;
+    ///
+    /// let tree = Tree::new_with_insert(77, 88);
+    ///
+    /// assert_eq!(tree.get(&77), Some(&88));
+    /// assert_eq!(tree.get(&100), None);
+    /// ```
     /// 
     pub fn get(&self, key: &K) -> Option<&V>
     {
@@ -108,7 +131,14 @@ where
     /// Returns a mutable reference to the value associated with the given key.
     /// If a value exists at `key`, then `Some(&mut V)` is returned; `None`
     /// otherwise. If invoked on an empty tree, returns `None`.
-    /// 
+    /// ```
+    /// use avl_tree::*;
+    ///
+    /// let mut tree = Tree::new_with_insert("foo", 1);
+    /// *tree.get_mut(&"foo").unwrap() += 1;
+    /// assert_eq!(tree[&"foo"], 2);
+    /// ```
+    ///
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V>
     {
         match self {
@@ -120,7 +150,15 @@ where
     /// Inserts the given key and value into the binary tree. If the key was
     /// already present, then `Some(V)` is returned holding the former value
     /// of the key. If the key wasn't already present, `None` is returned.
+    /// ```
+    /// use avl_tree::*;
     /// 
+    /// let mut tree = Tree::new();
+    /// assert_eq!(tree.insert("foo", 42), None);
+    /// assert_eq!(tree.insert("foo", 72), Some(42));
+    /// assert_eq!(tree[&"foo"], 72);
+    /// ```
+    ///
     pub fn insert(&mut self, key: K, value: V) -> Option<V>
     {
         use Ordering::*;
@@ -175,7 +213,16 @@ where
     /// Removes the provided key from the binary tree. If the key was present
     /// in the tree, `Some(V)` is returned holding the former value; otherwise,
     /// `None` is returned.
+    /// ```
+    /// use avl_tree::*;
     /// 
+    /// let mut tree = Tree::new();
+    /// tree.insert("foo", 42);
+    /// tree.insert("bar", 43);
+    /// assert_eq!(tree.remove(&"foo"), Some(42));
+    /// assert_eq!(tree.remove(&"foo"), None);
+    /// ```
+    ///
     pub fn remove(&mut self, key: &K) -> Option<V>
     {
         let mut ret = None;
@@ -241,7 +288,16 @@ where
     /// tree, the `index`-th item is returned as `Some((&K, &V))` holding both 
     /// the key and the value. If `index` was out of range, `None` is returned.
     /// This operation has `O(log n)` time-complexity.
-    /// 
+    /// ```
+    /// use avl_tree::*;
+    ///
+    /// let mut tree = Tree::new();
+    /// for (i, ch) in "qwertyuiopasdfghjklzxcvbnm".chars().enumerate() {
+    ///     tree.insert(ch, i);
+    /// }
+    /// assert_eq!(tree.get_nth(25), Some((&'z', &19)));
+    /// ```
+    ///
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
     {
         match self {
@@ -258,7 +314,7 @@ where
     {
         let mut ret  = None;
         let     wt_l = match &self.left { Filled(node) => node.weight, 
-                                          Empty        => 0            };
+                                          Empty        => 0,           };
         let idx_adj = index - wt_l;
         if idx_adj == 0 {
             ret = Some((&self.key, &self.value))
@@ -587,10 +643,12 @@ mod tests {
     #[test]
     fn it_works() {
         let mut tree = Tree::new();
-        for ch in "qwertyuiopasdfghjklzxcvbnmklasjfal;jasjfsa;".chars() {
-            tree.insert(ch, 5);
+        let     data = "qwertyuiopasdfghjklzxcvbnmklasjfal;jasjfsa;";
+        for (i, ch) in data.chars().enumerate() {
+            tree.insert(ch, i);
         }
-        println!("{:#?}", tree);
+        assert_eq!(tree[&'q'], 0_usize);
+        assert_eq!(tree.get(&'w'), Some(&1_usize));
     }
     
     #[test]
@@ -603,5 +661,31 @@ mod tests {
                 tree.insert('b', 7);
             }
         }
+        assert_eq!(tree[&'b'], 7);
+        
+        match tree.get_mut(&'b') {
+            Some(value) => *value += 7,
+            None => {},
+        } 
+        assert_eq!(tree[&'b'], 14);
+        
+        tree[&'b'] += 7;
+        assert_eq!(tree[&'b'], 21);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
