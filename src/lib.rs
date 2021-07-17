@@ -216,10 +216,11 @@ where
     /// ```
     /// use avl_tree::*;
     /// 
-    /// let mut tree = Tree::new();
-    /// tree.insert("foo", 42);
-    /// tree.insert("bar", 43);
-    /// assert_eq!(tree.remove(&"foo"), Some(42));
+    /// let mut tree = Tree::new_with_insert("foo", 42);
+    ///
+    /// assert_eq!(tree.get   (&"foo"), Some(&42));
+    /// assert_eq!(tree.remove(&"foo"), Some( 42));
+    /// assert_eq!(tree.get   (&"foo"), None);
     /// assert_eq!(tree.remove(&"foo"), None);
     /// ```
     ///
@@ -295,8 +296,11 @@ where
     /// for (i, ch) in "qwertyuiopasdfghjklzxcvbnm".chars().enumerate() {
     ///     tree.insert(ch, i);
     /// }
-    /// assert_eq!(tree.get_nth(25), Some((&'z', &19)));
-    /// assert_eq!(tree[&'a'], 10);
+    /// assert_eq!(tree.get_nth( 25), Some((&'z', &19)));
+    /// assert_eq!(tree.get_nth(  0), Some((&'a', &10)));
+    /// assert_eq!(tree.get_nth(  1), Some((&'b', &23)));
+    /// assert_eq!(tree.get_nth( 16), Some((&'q', &0 )));
+    /// assert_eq!(tree.get_nth(100), None);
     /// ```
     ///
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
@@ -432,23 +436,6 @@ where
     /// Moves the tree from it's former location, replacing it with `Empty` and
     /// returns the moved value to the caller giving it ownership.
     ///
-    /// The Rust version on HackerRank is old and won't support the 
-    /// implementation below. To get avl-tree working on that site, this 
-    /// following implementation has to be used instead:
-    ///
-    /// ```ignore
-    /// // Only use this if you have to. It will recursively clone every subtree
-    /// // in `right` and `left`. The uncommented version below is preferred
-    /// // because it can move the node and its `Box` without cloning.
-    ///
-    /// fn take(&mut self) -> Tree<K, V>
-    /// {
-    ///    let t = self.clone();
-    ///    *self = Empty;
-    ///    t
-    /// }
-    /// ```
-    /// 
     fn take(&mut self) -> Tree<K, V>
     {
         std::mem::take(self)
@@ -619,6 +606,11 @@ where
 
     /// Gives the tree the square bracket indexing feature. The tree keys are
     /// used to index their related values.
+    /// ```
+    /// use avl_tree::*;
+    /// let tree = Tree::new_with_insert("foo", 1);
+    /// assert_eq!(tree[&"foo"], 1);
+    /// ```
     ///
     fn index(&self, key: &K) -> &Self::Output
     {
@@ -636,6 +628,12 @@ where
 {
     /// Gives the tree the indexing feature so it behaves like a dictionary
     /// which supports square bracket indexing.
+    /// ```
+    /// use avl_tree::*;
+    /// let mut tree = Tree::new_with_insert("foo", 1);
+    /// tree[&"foo"] += 1;
+    /// assert_eq!(tree[&"foo"], 2);
+    /// ```
     /// 
     fn index_mut(&mut self, key: &K) -> &mut Self::Output
     {
