@@ -19,6 +19,8 @@ fn main()
     
     assert_eq!( tree[&'a'], 10 );
     
+    // Items in the tree can also be accessed by their ordinal position in the
+    // tree. This is an `O(log n)` operation.
     assert_eq!( tree.get_nth(25), Some((&'z', &19)) );
 }
 ```
