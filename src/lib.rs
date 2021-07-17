@@ -296,6 +296,7 @@ where
     ///     tree.insert(ch, i);
     /// }
     /// assert_eq!(tree.get_nth(25), Some((&'z', &19)));
+    /// assert_eq!(tree[&'a'], 10);
     /// ```
     ///
     pub fn get_nth(&self, index: usize) -> Option<(&K, &V)>
@@ -312,18 +313,27 @@ where
     /// 
     fn get_nth_internal(&self, index: isize) -> Option<(&K, &V)>
     {
+        use Ordering::*;
+        
         let mut ret  = None;
         let     wt_l = match &self.left { Filled(node) => node.weight, 
                                           Empty        => 0,           };
         let idx_adj = index - wt_l;
-        if idx_adj == 0 {
-            ret = Some((&self.key, &self.value))
-        }
-        else if idx_adj > 0 && self.right.is_filled() {
-            ret = self.right.get_nth_internal(idx_adj - 1);
-        }
-        else if self.left.is_filled() {
-            ret = self.left.get_nth_internal(index);
+        
+        match idx_adj.cmp(&0_isize) {
+            Equal => { 
+                ret = Some((&self.key, &self.value)); 
+            },
+            Greater => {
+                if self.right.is_filled() {
+                    ret = self.right.get_nth_internal(idx_adj - 1);
+                }
+            },
+            Less => {
+                if self.left.is_filled() {
+                    ret = self.left.get_nth_internal(index);
+                }
+            },
         }
         ret
     }
