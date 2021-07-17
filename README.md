@@ -19,6 +19,6 @@ fn main()
     
     assert_eq!( tree[&'a'], 10 );
     
-    assert_eq!( tree.get_nth(25), Some((&'z', &19) ));
+    assert_eq!( tree.get_nth(25), Some((&'z', &19)) );
 }
 ```
