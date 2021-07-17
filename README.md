@@ -17,6 +17,7 @@ fn main()
         tree.insert(ch, i);
     }
     
+    // Values can be accessed by key.
     assert_eq!( tree[&'a'], 10 );
     
     // Items in the tree can also be accessed by their ordinal position in the
